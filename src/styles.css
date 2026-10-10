@@ -39,3 +39,44 @@
 .footer-brand svg{width:20px}
 @keyframes aurora-drift{from{transform:translate3d(-3%,0,0) scale(1)}to{transform:translate3d(3%,-4%,0) scale(1.06)}}
 @media(max-width:600px){.footer-meta{padding:14px 18px 16px;flex-wrap:wrap}.footer-wordmark{font-size:min(16.5vw,40vh)}}
+
+/* ---- Hero ball ---- */
+.hero {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 600px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #07060d;
+}
+.hero-ball {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  animation: ball-in 1.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.hero-title {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  pointer-events: none;
+  font-size: clamp(3rem, 10vw, 8rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-shadow: 0 0 40px rgba(242, 91, 208, 0.45);
+  animation: title-in 1.4s 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes ball-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes title-in {
+  from { opacity: 0; transform: translateY(16px); filter: blur(8px); }
+  to   { opacity: 1; transform: none; filter: blur(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-ball, .hero-title { animation: none; }
+}
