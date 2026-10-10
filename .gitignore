@@ -1,3 +1,40 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+.venv/
+backend/.venv/
+venv/
+env/
+
+# Production build
+dist/
+dist-ssr/
+.output/
+.wrangler/
+*.local
+
+# Environment files
 .env
+.env.*
+!.env.example
+backend/.env
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+backend/__pycache__/
+backend/*/__pycache__/
+backend/*/*/__pycache__/
+
+# Uploads & temporary media
+backend/uploads/
+uploads/
+
+# External cloned repos
+backend/mirofish_repo/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

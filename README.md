@@ -1,81 +1,44 @@
-# Project Name
+# VIRALITY 2.0 — "Predict More. Publish Less."
+## Pre-Publication Social Media Reach Prediction Engine
 
-A modern web application built with React, TypeScript, and Tailwind CSS.
+Virality simulates audience reactions, diffusion cascades, and engagement before you publish.
 
-## Getting Started
+### System Architecture
+1. **Google Gemini 2.5 Flash**: Multimodal content understanding (1 FPS video tokens, speech cadence, OCR, 0-3s hook scoring).
+2. **MiroFish OASIS Multi-Agent Swarm**: Simulates 20–50 heterogeneous audience agents with OCEAN personality traits, skepticism, inter-agent debates, and sharing cascades.
+3. **Calibrated Conformal Regressor**: Computes non-hallucinated 90% confidence reach intervals (Min, Median, Peak views).
+4. **Google Gemini 2.5 Pro**: Diagnoses timestamp retention leaks (e.g. 00:02.4) and creates Variant B with projected reach lift.
+5. **Tiger Data (TimescaleDB / PostgreSQL)**: High-speed temporal database for agent decisions and telemetry.
 
-Follow these instructions to set up and run the project locally.
+---
 
-### Prerequisites
+### Demo Login Credentials
+- **Email**: `demo@virality.ai` (or `creator@virality.ai`)
+- **Password**: `innohacks2026`
+- **Role**: Lead Creator & AI Strategist (Ayush)
 
-Make sure you have the following installed:
+---
 
-- [Node.js](https://nodejs.org/)
-- npm (included with Node.js)
-- Git
+### How to Run
 
-### Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone <your-repository-url>
-   ```
-
-2. Navigate to the project directory:
-
-   ```bash
-   cd <repository-name>
-   ```
-
-3. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-4. Start the development server:
-
-   ```bash
-   npm run dev
-   ```
-
-5. Open the local URL displayed in your terminal.
-
-## Tech Stack
-
-- **TanStack Start** — Application framework and routing
-- **React** — Component-based user interface
-- **TypeScript** — Type-safe JavaScript
-- **Tailwind CSS** — Utility-first styling
-
-## Development
-
-You can develop locally using your preferred code editor. Changes can be tracked and managed through Git.
-
-To build the project for production:
-
-```bash
-npm run build
+#### 1. Start Backend (FastAPI)
+```powershell
+cd c:\Users\ayush\OneDrive\Desktop\Virality\backend
+.\.venv\Scripts\python.exe run.py
 ```
+Backend runs on: `http://localhost:8000`
+API Documentation: `http://localhost:8000/docs`
 
-To run the production build, if supported by the project configuration:
-
-```bash
-npm run start
+#### 2. Start Frontend (React / Vite)
+```powershell
+cd c:\Users\ayush\OneDrive\Desktop\Virality\frontend
+npm run dev
 ```
+Frontend runs on: `http://localhost:5173` (or Vite's assigned port)
 
-## Project Structure
+---
 
-The project follows a modular structure, keeping application routes, components, and styling organized for maintainability.
-
-## Contributing
-
-1. Fork the repository.
-2. Create a new branch for your changes.
-3. Commit your changes with a descriptive message.
-4. Push your branch and open a pull request.
-
-## License
-
-Add an appropriate license to this project if you intend to distribute it publicly.
+### Environment Variables (`backend/.env`)
+- `GEMINI_API_KEY`: Your Google Gemini API Key.
+- `TIGER_DATA_DATABASE_URL`: Your Tiger Data connection string:
+  `postgresql+asyncpg://tsdbadmin:<PASSWORD>@<HOST>.tigerdata.cloud:5432/virality_db?ssl=require`
