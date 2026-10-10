@@ -4,6 +4,7 @@ import { ArrowDown, ArrowRight, Bell, Plus, History, Video, Settings2, CircleHel
 import { BrandHalo, LogoMark } from '@/components/virality/brand'
 import { Hero } from '@/components/virality/Hero'
 import { AudienceMap } from '@/components/virality/audience-map'
+import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/')({
   head: () => ({
