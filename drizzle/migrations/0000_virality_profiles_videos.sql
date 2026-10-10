@@ -1,0 +1,17 @@
+CREATE TABLE public.profiles (id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE, display_name text NOT NULL DEFAULT '', avatar_url text, created_at timestamptz NOT NULL DEFAULT now());
+GRANT SELECT, UPDATE ON public.profiles TO authenticated;
+GRANT ALL ON public.profiles TO service_role;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Own profile read" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id);
+CREATE POLICY "Own profile update" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+CREATE FUNCTION public.create_virality_profile() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$ BEGIN INSERT INTO public.profiles(id, display_name) VALUES (new.id, coalesce(new.raw_user_meta_data->>'display_name', new.raw_user_meta_data->>'full_name', '')); RETURN new; END; $$;
+CREATE TRIGGER virality_profile_signup AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.create_virality_profile();
+CREATE TABLE public.video_projects (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE, title text NOT NULL DEFAULT 'Untitled video', description text NOT NULL DEFAULT '', current_audience text NOT NULL DEFAULT '', target_audience text NOT NULL DEFAULT '', platform text NOT NULL DEFAULT 'Instagram', video_path text, status text NOT NULL DEFAULT 'draft', initial_analysis text, final_analysis text, created_at timestamptz NOT NULL DEFAULT now());
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.video_projects TO authenticated;
+GRANT ALL ON public.video_projects TO service_role;
+ALTER TABLE public.video_projects ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Own projects" ON public.video_projects FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX video_projects_owner ON public.video_projects(user_id, created_at DESC);
+CREATE POLICY "Own videos upload" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'videos' AND (storage.foldername(name))[1] = auth.uid()::text);
+CREATE POLICY "Own videos read" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'videos' AND (storage.foldername(name))[1] = auth.uid()::text);
+CREATE POLICY "Own videos delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'videos' AND (storage.foldername(name))[1] = auth.uid()::text);
