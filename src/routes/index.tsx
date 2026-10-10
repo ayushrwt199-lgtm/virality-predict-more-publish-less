@@ -20,6 +20,77 @@ export const Route = createFileRoute('/')({
 
 const API_BASE = "http://localhost:8000/api/v1"
 
+const DEFAULT_ANALYSIS_DATA = {
+  content_dna: {
+    hook_score: 0.78,
+    hook_diagnosis: "Opening 3 seconds creates strong cognitive curiosity; viewer retention holds above baseline before slight pacing deceleration at 00:02.4.",
+    pacing_score: 0.74,
+    audio_clarity: 0.89,
+    audio_visual_alignment: 0.85,
+    ocr_extracted_text: ["VIRALITY 2.0", "PREDICT MORE", "PUBLISH LESS"],
+    detected_topics: ["Autonomous AI", "Retention Algorithms", "Creative Tech", "Diffusion Models"],
+    controversy_polarization_risk: "MODERATE"
+  },
+  mirofish_summary: {
+    total_agents: 30,
+    bounce_rate_pct: 24.2,
+    completion_rate_pct: 75.8,
+    like_rate_pct: 38.5,
+    comment_rate_pct: 18.2,
+    share_cascade_rate_pct: 22.4,
+    virality_velocity: 7.2,
+    consensus_summary: "Audience consensus is highly favorable toward the core thesis, with secondary share cascades propagating across tech amplifier networks.",
+    primary_friction_points: [
+      "Pacing drops around second 00:02.4 before the punchline.",
+      "Skeptic agents questioned empirical verification.",
+      "Closing CTA can be strengthened for peer shares."
+    ]
+  },
+  calibrated_prediction: {
+    reach: {
+      min_impressions: 18400,
+      median_impressions: 34200,
+      peak_impressions: 68500,
+      confidence_level_pct: 90,
+      calibration_method: "Conformal Quantile Regression"
+    },
+    predicted_engagement_rate: 7.8,
+    virality_potential_index: 84,
+    share_propensity: "High",
+    comment_propensity: "Elevated",
+    category_benchmark_percentile: 86
+  },
+  strategic_prescription: {
+    executive_verdict: "High viral potential (84/100). Bounded reach projects 18,400 to 68,500 impressions.",
+    retention_leaks: [
+      "At 00:02.4: 26% of synthetic agents showed skip intent due to talking head pause.",
+      "Skeptic segment requested immediate proof."
+    ],
+    actionable_remedies: [
+      {
+        timestamp: "00:01.8",
+        issue: "Delayed Visual Hook",
+        recommended_change: "Punch zoom into subject + high contrast kinetic subtitle.",
+        expected_impact: "+32% drop-off reduction in first 3 seconds."
+      },
+      {
+        timestamp: "00:02.4",
+        issue: "Talking Head Hesitation",
+        recommended_change: "Cut pause; lead with contrarian question: 'Why are 90% of creators publishing in the dark?'",
+        expected_impact: "+48% retention boost."
+      }
+    ],
+    variant_b: {
+      original_hook: "Draft video concept for social media reach pre-flight.",
+      recommended_optimized_hook: "Stop publishing blindly. 94% of videos die in the first 3 seconds — here is the exact retention test before you post.",
+      original_caption: "Draft post testing AI audience distribution.",
+      recommended_caption_hashtags: "Predict More. Publish Less. 🚀 We tested this through a 30-agent synthetic audience on Instagram before hitting publish. #ViralityAI #ContentStrategy #AITips",
+      predicted_lift_pct: "+78% Projected Reach Lift",
+      why_it_works: "Eliminates the 00:02.4 pause and introduces immediate cognitive curiosity."
+    }
+  }
+}
+
 function Index() {
   const [file, setFile] = useState<File | null>(null)
   const [url, setUrl] = useState('')
@@ -31,14 +102,14 @@ function Index() {
   const [baselineViews, setBaselineViews] = useState(15000)
   const [simulationIntensity, setSimulationIntensity] = useState<'fast' | 'balanced' | 'deep'>('balanced')
   
-  // UI state
+  // UI state - Default to 'ready' and results active so all interactive sections are immediately visible
   const [dragging, setDragging] = useState(false)
   const [modal, setModal] = useState<'signin' | 'signup' | 'settings' | 'help' | null>(null)
   const [notice, setNotice] = useState(false)
-  const [results, setResults] = useState(false)
+  const [results, setResults] = useState(true)
   const [saved, setSaved] = useState(false)
   const [accountMessage, setAccountMessage] = useState('')
-  const [phase, setPhase] = useState<'empty' | 'analysing' | 'ready'>('empty')
+  const [phase, setPhase] = useState<'empty' | 'analysing' | 'ready'>('ready')
   const [stage, setStage] = useState(0)
 
   // Auth state
@@ -49,8 +120,8 @@ function Index() {
   const [loginEmail, setLoginEmail] = useState('demo@virality.ai')
   const [loginPassword, setLoginPassword] = useState('innohacks2026')
 
-  // Real API response state
-  const [analysisData, setAnalysisData] = useState<any>(null)
+  // Analysis response state - Pre-loaded with rich pre-flight data
+  const [analysisData, setAnalysisData] = useState<any>(DEFAULT_ANALYSIS_DATA)
   const input = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
