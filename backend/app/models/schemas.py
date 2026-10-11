@@ -86,14 +86,21 @@ class RetentionCurvePoint(BaseModel):
 class CascadeNode(BaseModel):
     id: str
     label: str
-    kind: str # 'core', 'creator', 'audience', 'topic', 'platform'
+    kind: str # 'core', 'creator', 'audience', 'topic', 'platform', 'model'
     size: int
     x: Optional[float] = 0
     y: Optional[float] = 0
+    archetype: Optional[str] = None
+    action: Optional[str] = None
+    dwell_time_sec: Optional[float] = None
+    sentiment: Optional[str] = None
+    comment_text: Optional[str] = None
+    propagation_round: Optional[int] = None
 
 class CascadeEdge(BaseModel):
     source: str
     target: str
+    rel: Optional[str] = "DIFFUSES_TO"
 
 class InterAgentDebate(BaseModel):
     topic: str

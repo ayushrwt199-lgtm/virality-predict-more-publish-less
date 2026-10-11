@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useRef, useState, useEffect } from 'react'
 import { ArrowDown, ArrowRight, Bell, Plus, History, Video, Settings2, CircleHelp, Upload, Instagram, Youtube, Music2, LockKeyhole, Sparkles, X, ChevronDown, Check, Bookmark, Key, Zap, TrendingUp, Users, ShieldAlert, Sliders } from 'lucide-react'
-import { BrandHalo, LogoMark } from '@/components/virality/brand'
+import { LogoMark } from '@/components/virality/brand'
 import { Hero } from '@/components/virality/Hero'
 import { AudienceMap } from '@/components/virality/audience-map'
 import { Button } from '@/components/ui/button'
@@ -18,98 +18,30 @@ export const Route = createFileRoute('/')({
   component: Index
 })
 
-const API_BASE = "http://localhost:8000/api/v1"
+const API_BASE = "/api/v1"
 
-const DEFAULT_ANALYSIS_DATA = {
-  content_dna: {
-    hook_score: 0.78,
-    hook_diagnosis: "Opening 3 seconds creates strong cognitive curiosity; viewer retention holds above baseline before slight pacing deceleration at 00:02.4.",
-    pacing_score: 0.74,
-    audio_clarity: 0.89,
-    audio_visual_alignment: 0.85,
-    ocr_extracted_text: ["VIRALITY 2.0", "PREDICT MORE", "PUBLISH LESS"],
-    detected_topics: ["Autonomous AI", "Retention Algorithms", "Creative Tech", "Diffusion Models"],
-    controversy_polarization_risk: "MODERATE"
-  },
-  mirofish_summary: {
-    total_agents: 30,
-    bounce_rate_pct: 24.2,
-    completion_rate_pct: 75.8,
-    like_rate_pct: 38.5,
-    comment_rate_pct: 18.2,
-    share_cascade_rate_pct: 22.4,
-    virality_velocity: 7.2,
-    consensus_summary: "Audience consensus is highly favorable toward the core thesis, with secondary share cascades propagating across tech amplifier networks.",
-    primary_friction_points: [
-      "Pacing drops around second 00:02.4 before the punchline.",
-      "Skeptic agents questioned empirical verification.",
-      "Closing CTA can be strengthened for peer shares."
-    ]
-  },
-  calibrated_prediction: {
-    reach: {
-      min_impressions: 18400,
-      median_impressions: 34200,
-      peak_impressions: 68500,
-      confidence_level_pct: 90,
-      calibration_method: "Conformal Quantile Regression"
-    },
-    predicted_engagement_rate: 7.8,
-    virality_potential_index: 84,
-    share_propensity: "High",
-    comment_propensity: "Elevated",
-    category_benchmark_percentile: 86
-  },
-  strategic_prescription: {
-    executive_verdict: "High viral potential (84/100). Bounded reach projects 18,400 to 68,500 impressions.",
-    retention_leaks: [
-      "At 00:02.4: 26% of synthetic agents showed skip intent due to talking head pause.",
-      "Skeptic segment requested immediate proof."
-    ],
-    actionable_remedies: [
-      {
-        timestamp: "00:01.8",
-        issue: "Delayed Visual Hook",
-        recommended_change: "Punch zoom into subject + high contrast kinetic subtitle.",
-        expected_impact: "+32% drop-off reduction in first 3 seconds."
-      },
-      {
-        timestamp: "00:02.4",
-        issue: "Talking Head Hesitation",
-        recommended_change: "Cut pause; lead with contrarian question: 'Why are 90% of creators publishing in the dark?'",
-        expected_impact: "+48% retention boost."
-      }
-    ],
-    variant_b: {
-      original_hook: "Draft video concept for social media reach pre-flight.",
-      recommended_optimized_hook: "Stop publishing blindly. 94% of videos die in the first 3 seconds — here is the exact retention test before you post.",
-      original_caption: "Draft post testing AI audience distribution.",
-      recommended_caption_hashtags: "Predict More. Publish Less. 🚀 We tested this through a 30-agent synthetic audience on Instagram before hitting publish. #ViralityAI #ContentStrategy #AITips",
-      predicted_lift_pct: "+78% Projected Reach Lift",
-      why_it_works: "Eliminates the 00:02.4 pause and introduces immediate cognitive curiosity."
-    }
-  }
-}
+// No default analysis data — results only appear after running the pipeline
 
 function Index() {
   const [file, setFile] = useState<File | null>(null)
   const [url, setUrl] = useState('')
   const [description, setDescription] = useState('')
   const [platform, setPlatform] = useState('Instagram')
-  const [current, setCurrent] = useState('Tech enthusiasts, early creators, developers')
-  const [target, setTarget] = useState('Explore feed, viral AI circles, wider tech community')
+  const [current, setCurrent] = useState('')
+  const [target, setTarget] = useState('')
   const [reach, setReach] = useState('50000')
   const [baselineViews, setBaselineViews] = useState(15000)
   const [simulationIntensity, setSimulationIntensity] = useState<'fast' | 'balanced' | 'deep'>('balanced')
+  const [videoDuration, setVideoDuration] = useState<number | null>(null)
   
-  // UI state - Default to 'ready' and results active so all interactive sections are immediately visible
+  // UI state - Start blank; results appear only after running the pipeline
   const [dragging, setDragging] = useState(false)
   const [modal, setModal] = useState<'signin' | 'signup' | 'settings' | 'help' | null>(null)
   const [notice, setNotice] = useState(false)
-  const [results, setResults] = useState(true)
+  const [results, setResults] = useState(false)
   const [saved, setSaved] = useState(false)
   const [accountMessage, setAccountMessage] = useState('')
-  const [phase, setPhase] = useState<'empty' | 'analysing' | 'ready'>('ready')
+  const [phase, setPhase] = useState<'empty' | 'analysing' | 'ready'>('empty')
   const [stage, setStage] = useState(0)
 
   // Auth state
@@ -119,10 +51,64 @@ function Index() {
   })
   const [loginEmail, setLoginEmail] = useState('demo@virality.ai')
   const [loginPassword, setLoginPassword] = useState('innohacks2026')
+  const [registerName, setRegisterName] = useState('')
+  const [registerHandle, setRegisterHandle] = useState('')
 
-  // Analysis response state - Pre-loaded with rich pre-flight data
-  const [analysisData, setAnalysisData] = useState<any>(DEFAULT_ANALYSIS_DATA)
+  // Live Backend & History state
+  const [systemStatus, setSystemStatus] = useState<any>(null)
+  const [historyItems, setHistoryItems] = useState<any[]>([])
+
+  // Analysis response state — null until pipeline returns real data
+  const [analysisData, setAnalysisData] = useState<any>(null)
   const input = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    loadSystemStatus()
+    loadHistory()
+  }, [])
+
+  async function loadSystemStatus() {
+    try {
+      const res = await fetch(`${API_BASE}/analysis/system/status`)
+      if (res.ok) {
+        const data = await res.json()
+        setSystemStatus(data)
+      }
+    } catch (e) {
+      console.warn('[Virality] System status offline:', e)
+    }
+  }
+
+  async function loadHistory() {
+    try {
+      const res = await fetch(`${API_BASE}/analysis/history`)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data) && data.length > 0) {
+          setHistoryItems(data)
+        }
+      }
+    } catch (e) {
+      console.warn('[Virality] Failed to fetch history:', e)
+    }
+  }
+
+  async function loadAnalysisById(id: string) {
+    try {
+      const res = await fetch(`${API_BASE}/analysis/${id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setAnalysisData(data)
+        if (data.target_platform) setPlatform(data.target_platform)
+        if (data.story_context) setDescription(data.story_context)
+        setPhase('ready')
+        setResults(true)
+        document.getElementById('audience')?.scrollIntoView({ behavior: 'smooth' })
+      }
+    } catch (e) {
+      console.warn('[Virality] Failed to load analysis:', e)
+    }
+  }
 
   useEffect(() => {
     if (!file) { setUrl(''); return }
@@ -146,12 +132,32 @@ function Index() {
     setAccountMessage('')
     setResults(false)
     setSaved(false)
+
+    // Detect exact video duration via HTML5 Video metadata
+    if (f.type.startsWith('video/')) {
+      try {
+        const v = document.createElement('video')
+        v.preload = 'metadata'
+        v.onloadedmetadata = () => {
+          window.URL.revokeObjectURL(v.src)
+          if (v.duration && !isNaN(v.duration) && isFinite(v.duration)) {
+            setVideoDuration(Math.round(v.duration * 10) / 10)
+          }
+        }
+        v.src = URL.createObjectURL(f)
+      } catch (e) {
+        // Fallback to server detection
+      }
+    } else {
+      setVideoDuration(null)
+    }
   }
 
   function reset() {
     setPhase('empty')
     setReach('50000')
     setFile(null)
+    setVideoDuration(null)
     setDescription('')
     setResults(false)
     setSaved(false)
@@ -159,39 +165,83 @@ function Index() {
     document.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // Real Login Handler
-  async function handleLogin(e: React.FormEvent) {
+  // Real Auth Handler (Login & Register via Backend API)
+  async function handleAuth(e: React.FormEvent) {
     e.preventDefault()
-    setAccountMessage('Connecting to Virality authentication...')
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword })
-      })
-      if (!res.ok) {
-        throw new Error('Authentication failed')
+    if (modal === 'signup') {
+      setAccountMessage('Registering creator profile with Tiger DB...')
+      try {
+        const res = await fetch(`${API_BASE}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: loginEmail,
+            password: loginPassword,
+            name: registerName || loginEmail.split('@')[0],
+            handle: registerHandle || `@${loginEmail.split('@')[0]}`
+          })
+        })
+        if (!res.ok) throw new Error('Registration failed')
+        const data = await res.json()
+        setUser(data.user)
+        localStorage.setItem('virality_user', JSON.stringify(data.user))
+        setAccountMessage('Account created and logged in!')
+        setTimeout(() => setModal(null), 800)
+      } catch (err) {
+        const newUser = {
+          name: registerName || 'Creator',
+          email: loginEmail,
+          handle: registerHandle || `@creator`
+        }
+        setUser(newUser)
+        localStorage.setItem('virality_user', JSON.stringify(newUser))
+        setAccountMessage('Authenticated with local session.')
+        setTimeout(() => setModal(null), 800)
       }
-      const data = await res.json()
-      setUser(data.user)
-      localStorage.setItem('virality_user', JSON.stringify(data.user))
-      setAccountMessage('Successfully signed in!')
-      setTimeout(() => setModal(null), 800)
-    } catch (err) {
-      // Fallback for seamless demo testing
-      const demoUser = {
-        name: loginEmail === 'demo@virality.ai' ? 'Ayush (InnoHacks Lead)' : 'Pro Creator',
-        email: loginEmail,
-        handle: '@virality_creator'
+    } else {
+      setAccountMessage('Connecting to Virality authentication...')
+      try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: loginEmail, password: loginPassword })
+        })
+        if (!res.ok) throw new Error('Authentication failed')
+        const data = await res.json()
+        setUser(data.user)
+        localStorage.setItem('virality_user', JSON.stringify(data.user))
+        setAccountMessage('Successfully signed in!')
+        setTimeout(() => setModal(null), 800)
+      } catch (err) {
+        const demoUser = {
+          name: loginEmail === 'demo@virality.ai' ? 'Ayush (InnoHacks Lead)' : 'Pro Creator',
+          email: loginEmail,
+          handle: '@virality_creator'
+        }
+        setUser(demoUser)
+        localStorage.setItem('virality_user', JSON.stringify(demoUser))
+        setAccountMessage('Authenticated with Demo Session.')
+        setTimeout(() => setModal(null), 800)
       }
-      setUser(demoUser)
-      localStorage.setItem('virality_user', JSON.stringify(demoUser))
-      setAccountMessage('Authenticated with Demo Session.')
-      setTimeout(() => setModal(null), 800)
     }
   }
 
-  function fillDemoCredentials() {
+  async function fillDemoCredentials() {
+    try {
+      const res = await fetch(`${API_BASE}/auth/demo-credentials`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.demo_accounts && data.demo_accounts.length > 0) {
+          const acc = data.demo_accounts[0]
+          setLoginEmail(acc.email)
+          setLoginPassword(acc.password)
+          setAccountMessage(`Loaded from API: ${acc.email} (${acc.role})`)
+          return
+        }
+      }
+    } catch (e) {
+      // offline fallback
+    }
     setLoginEmail('demo@virality.ai')
     setLoginPassword('innohacks2026')
     setAccountMessage('Demo credentials filled: demo@virality.ai / innohacks2026')
@@ -221,6 +271,7 @@ function Index() {
     formData.append('baseline_views', String(baselineViews))
     formData.append('simulation_intensity', simulationIntensity)
     formData.append('agent_count', simulationIntensity === 'deep' ? '50' : simulationIntensity === 'fast' ? '20' : '30')
+    if (videoDuration) formData.append('video_duration', String(videoDuration))
 
     try {
       const response = await fetch(`${API_BASE}/analysis/run`, {
@@ -231,12 +282,12 @@ function Index() {
       const result = await response.json()
       clearInterval(stageInterval)
       setAnalysisData(result)
+      loadHistory() // Refresh recent explorations from Tiger DB
       setPhase('ready')
       setResults(true)
       document.getElementById('audience')?.scrollIntoView({ behavior: 'smooth' })
     } catch (err) {
       console.warn('[Virality] Using local engine fallback:', err)
-      // High-fidelity fallback result
       clearInterval(stageInterval)
       const mockResult = {
         content_dna: {
@@ -340,17 +391,36 @@ function Index() {
         </Button>
         <div className="side-history sidebar-text">
           <h4>RECENT EXPLORATIONS</h4>
-          {(saved ? [file?.name || 'Untitled exploration'] : ['The everyday edit', 'A different perspective', 'Weekend in motion']).map((name, i) => (
-            <div className="history-row" key={name} onClick={() => document.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })}>
-              <Video />
-              <div>
-                {name}
-                <div className="text-muted-foreground text-[9px] mt-1">
-                  {saved ? 'Saved this session' : ['Example · Instagram', 'Example · YouTube', 'Example · TikTok'][i]}
+          {historyItems.length > 0 ? (
+            historyItems.slice(0, 5).map((item: any, i: number) => (
+              <div
+                className="history-row"
+                key={item.analysis_id || i}
+                onClick={() => loadAnalysisById(item.analysis_id)}
+                title="Click to view full simulation results"
+              >
+                <Video />
+                <div>
+                  <div className="truncate max-w-[140px] font-medium">{item.story_context?.slice(0, 24) || 'Exploration'}...</div>
+                  <div className="text-muted-foreground text-[9px] mt-0.5">
+                    {item.target_platform} · {new Date(item.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            (saved ? [file?.name || 'Untitled exploration'] : ['The everyday edit', 'A different perspective', 'Weekend in motion']).map((name, i) => (
+              <div className="history-row" key={name} onClick={() => document.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })}>
+                <Video />
+                <div>
+                  {name}
+                  <div className="text-muted-foreground text-[9px] mt-1">
+                    {saved ? 'Saved this session' : ['Example · Instagram', 'Example · YouTube', 'Example · TikTok'][i]}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
         <div className="sidebar-bottom">
           <Button variant="ghost" className="side-control" title="Preferences" onClick={() => setModal('settings')}>
@@ -375,6 +445,10 @@ function Index() {
           <a className="active" href="#upload">Workspace</a>
           {phase === 'ready' && <a href="#audience">Audience Map</a>}
           {results && <a href="#results">Prediction & Lift</a>}
+          <span className="flex items-center gap-1.5 text-xs text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            {systemStatus?.status === 'operational' ? 'API Live: 4-Stage Engine' : 'Engine Ready'}
+          </span>
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
             {user ? `${user.name} (${user.handle})` : 'Personal Workspace'} <ChevronDown size={12} />
           </span>
@@ -398,32 +472,46 @@ function Index() {
 
       {notice && (
         <div className="popover-content">
-          <h3>Notifications</h3>
-          <p>Connected: Gemini 2.5 Flash + MiroFish OASIS Swarm + Tiger Data.</p>
-          <p className="mt-3 text-xs text-muted-foreground">Demo credentials active: demo@virality.ai / innohacks2026</p>
+          <h3>System Intelligence & Status</h3>
+          <div className="space-y-2 text-xs text-muted-foreground mt-2">
+            <div className="flex items-center justify-between">
+              <span>FastAPI Gateway:</span>
+              <span className="text-emerald-500 font-medium">Operational (:8000)</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Perception Engine:</span>
+              <span className="text-foreground font-medium">{systemStatus?.gemini_model || 'Gemini 2.5 Flash'}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Simulation Swarm:</span>
+              <span className="text-foreground font-medium">{systemStatus?.mirofish_engine || 'MiroFish OASIS Swarm'}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Database Backend:</span>
+              <span className="text-foreground font-medium">{systemStatus?.database_backend || 'Tiger Data / Timescale'}</span>
+            </div>
+          </div>
+          <div className="mt-3 pt-3 border-t text-[11px] text-muted-foreground">
+            Demo Credentials: <code className="text-foreground">demo@virality.ai / innohacks2026</code>
+          </div>
         </div>
       )}
 
       {/* Main Content */}
       <main className="main-content">
-        {/* Intro */}
+        {/* Intro — Clean Hero with Halftone Ring Matching Reference */}
         <section className="intro">
           <div className="intro-status">
             <span className="status-dot" />
-            Active Pipeline: Gemini Perception → MiroFish Swarm → Conformal Regressor
+            A NEW PERSPECTIVE ON YOUR CONTENT
           </div>
           <Hero />
-          <div className="brand-stage" tabIndex={0} aria-label="Reveal VIRALITY introduction">
+          <div className="brand-stage" tabIndex={0} aria-label="VIRALITY AI">
             <div className="brand-lockup">
               <LogoMark />
               <h1>VIRALITY</h1>
-              <sup>AI</sup>
-            </div>
-            <div className="brand-story">
-              <p>Predict More. Publish Less.</p>
-              <Button variant="default" onClick={() => document.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })}>
-                Explore your next video <ArrowDown />
-              </Button>
+              <span className="brand-divider" aria-hidden="true" />
+              <span className="brand-ai">AI</span>
             </div>
           </div>
           <div className="intro-footer">
@@ -544,24 +632,53 @@ function Index() {
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div>
                   <label className="field-label" htmlFor="reach">Reach Goal (Views)</label>
-                  <input
+                  <select
                     id="reach"
                     className="text-input"
                     value={reach}
                     onChange={e => setReach(e.target.value)}
-                    placeholder="e.g. 50,000"
-                  />
+                  >
+                    <option value="5000">5,000</option>
+                    <option value="10000">10,000</option>
+                    <option value="25000">25,000</option>
+                    <option value="50000">50,000</option>
+                    <option value="100000">100,000</option>
+                    <option value="250000">250,000</option>
+                    <option value="500000">500,000</option>
+                    <option value="1000000">1,000,000 (1M)</option>
+                    <option value="2500000">2,500,000 (2.5M)</option>
+                    <option value="5000000">5,000,000 (5M)</option>
+                    <option value="8000000">8,000,000 (8M)</option>
+                    <option value="10000000">10,000,000 (10M)</option>
+                    <option value="25000000">25,000,000 (25M)</option>
+                    <option value="50000000">50,000,000+ (50M+)</option>
+                  </select>
                 </div>
                 <div>
                   <label className="field-label" htmlFor="baseline">Creator Baseline Views</label>
-                  <input
+                  <select
                     id="baseline"
-                    type="number"
                     className="text-input"
                     value={baselineViews}
                     onChange={e => setBaselineViews(Number(e.target.value))}
-                    placeholder="15000"
-                  />
+                  >
+                    <option value={500}>500</option>
+                    <option value={1000}>1,000</option>
+                    <option value={2500}>2,500</option>
+                    <option value={5000}>5,000</option>
+                    <option value={10000}>10,000</option>
+                    <option value={15000}>15,000</option>
+                    <option value={25000}>25,000</option>
+                    <option value={50000}>50,000</option>
+                    <option value={100000}>100,000</option>
+                    <option value={250000}>250,000</option>
+                    <option value={500000}>500,000</option>
+                    <option value={1000000}>1,000,000 (1M)</option>
+                    <option value={2500000}>2,500,000 (2.5M)</option>
+                    <option value={5000000}>5,000,000 (5M)</option>
+                    <option value={8000000}>8,000,000 (8M)</option>
+                    <option value={10000000}>10,000,000+ (10M+)</option>
+                  </select>
                 </div>
               </div>
 
@@ -783,6 +900,131 @@ function Index() {
               </div>
             </div>
 
+            {/* Step 2: MiroFish Swarm Attention Retention Curve */}
+            {analysisData.retention_curve && analysisData.retention_curve.length > 0 && (
+              <div className="mt-6 p-5 rounded-2xl border bg-background/50">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="text-xs uppercase tracking-wider text-primary font-semibold flex items-center gap-1.5">
+                      <Zap size={14} /> Second-by-Second Attention Retention Curve ({analysisData.mirofish_summary?.total_agents || 30} OASIS Agents · {analysisData.retention_curve[analysisData.retention_curve.length - 1]?.timestamp_sec}s Duration)
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Simulated drop-off points, dwell velocity, and retention friction timestamps
+                    </p>
+                  </div>
+                  <span className="text-[10px] px-2.5 py-1 rounded-full bg-secondary border text-muted-foreground">
+                    Avg Completion: {analysisData.mirofish_summary?.completion_rate_pct || 74}%
+                  </span>
+                </div>
+
+                {/* Horizontal Timeline Bar Visualization */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 pt-2">
+                  {analysisData.retention_curve.map((pt: any, idx: number) => (
+                    <div key={idx} className={`p-2.5 rounded-lg border text-center transition-all ${pt.danger_flag ? 'border-destructive bg-destructive/10 ring-1 ring-destructive/30' : 'bg-secondary/40'}`}>
+                      <div className="text-[10px] text-muted-foreground font-mono">{pt.timestamp_sec}s</div>
+                      <div className={`text-base font-bold my-0.5 ${pt.danger_flag ? 'text-destructive' : 'text-foreground'}`}>
+                        {pt.retention_pct}%
+                      </div>
+                      {pt.danger_flag ? (
+                        <div className="text-[9px] font-semibold text-destructive uppercase tracking-tight flex items-center justify-center gap-0.5">
+                          <ShieldAlert size={10} /> Leak
+                        </div>
+                      ) : (
+                        <div className="text-[9px] text-muted-foreground">-{pt.drop_off_count} drop</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {analysisData.retention_curve.find((p: any) => p.danger_flag) && (
+                  <div className="mt-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-2 text-xs text-destructive">
+                    <ShieldAlert size={16} className="shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Primary Retention Leak Point ({analysisData.retention_curve.find((p: any) => p.danger_flag)?.timestamp_sec}s): </strong>
+                      {analysisData.retention_curve.find((p: any) => p.danger_flag)?.flag_reason || 'Pacing lag in opening hook causes casual scrollers to swipe past.'}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 2B: Inter-Agent Debates & Community Herd Shifting */}
+            {analysisData.inter_agent_debates && analysisData.inter_agent_debates.length > 0 && (
+              <div className="mt-6 p-5 rounded-2xl border bg-background/50">
+                <div className="text-xs uppercase tracking-wider text-amber-500 font-semibold flex items-center gap-1.5 mb-3">
+                  <Users size={14} /> Simulated Inter-Agent Debates & Herd Polarization
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {analysisData.inter_agent_debates.map((debate: any, idx: number) => (
+                    <div key={idx} className="p-4 rounded-xl border bg-secondary/20 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between text-xs font-semibold mb-2">
+                          <span>{debate.topic}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            Polarization: {Math.round(debate.polarization_score * 100)}%
+                          </span>
+                        </div>
+                        <div className="space-y-2 text-xs">
+                          <div className="p-2 rounded bg-background/70 border-l-2 border-primary">
+                            <span className="text-[10px] font-semibold text-muted-foreground block">{debate.agent_a_name}</span>
+                            <p className="italic text-foreground/90">"{debate.agent_a_comment}"</p>
+                          </div>
+                          <div className="p-2 rounded bg-background/70 border-l-2 border-indigo-400">
+                            <span className="text-[10px] font-semibold text-muted-foreground block">{debate.agent_b_name}</span>
+                            <p className="italic text-foreground/90">"{debate.agent_b_comment}"</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-2 border-t text-[11px] text-muted-foreground">
+                        <strong className="text-foreground">Emergent Consensus Shift: </strong>
+                        {debate.emergent_shift}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 1: Gemini 2.5 Flash Content DNA Badges */}
+            {analysisData.content_dna && (
+              <div className="mt-6 p-5 rounded-2xl border bg-background/50">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <div className="text-xs uppercase tracking-wider text-primary font-semibold flex items-center gap-1.5">
+                    <Sparkles size={14} /> Gemini 2.5 Flash Multimodal Content DNA
+                  </div>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    Hook Diagnosis: {analysisData.content_dna.hook_diagnosis?.slice(0, 50)}...
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-3">
+                  <div className="p-2.5 rounded-lg bg-secondary/30 border">
+                    <span className="text-muted-foreground text-[10px] block">Visual Pacing Score</span>
+                    <span className="text-base font-bold text-foreground">{Math.round(analysisData.content_dna.pacing_score * 100)} / 100</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-secondary/30 border">
+                    <span className="text-muted-foreground text-[10px] block">Audio-Visual Alignment</span>
+                    <span className="text-base font-bold text-foreground">{Math.round(analysisData.content_dna.audio_visual_alignment * 100)}%</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-secondary/30 border">
+                    <span className="text-muted-foreground text-[10px] block">Controversy Polarization Risk</span>
+                    <span className="text-base font-bold text-amber-400">{analysisData.content_dna.controversy_polarization_risk}</span>
+                  </div>
+                </div>
+
+                {analysisData.content_dna.ocr_extracted_text && (
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className="text-[10px] uppercase text-muted-foreground">OCR Tokens Detected:</span>
+                    {analysisData.content_dna.ocr_extracted_text.map((txt: string, i: number) => (
+                      <span key={i} className="px-2 py-0.5 rounded bg-background border font-mono text-[10px]">
+                        {txt}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Step 4: Gemini Strategic Prescription & Variant B Studio */}
             {analysisData.strategic_prescription && (
               <div className="mt-8 p-6 rounded-2xl border border-indigo-500/30 bg-gradient-to-b from-indigo-950/20 to-background">
@@ -869,7 +1111,27 @@ function Index() {
               <>
                 <h2>{modal === 'signup' ? 'Create Virality Account' : 'Welcome to Virality'}</h2>
                 <p>AI content pre-flight testing workspace.</p>
-                <form onSubmit={handleLogin} className="space-y-3">
+                <form onSubmit={handleAuth} className="space-y-3">
+                  {modal === 'signup' && (
+                    <>
+                      <input
+                        className="text-input"
+                        value={registerName}
+                        onChange={e => setRegisterName(e.target.value)}
+                        placeholder="Full Name (e.g. Ayush)"
+                        type="text"
+                        required
+                      />
+                      <input
+                        className="text-input"
+                        value={registerHandle}
+                        onChange={e => setRegisterHandle(e.target.value)}
+                        placeholder="Creator Handle (e.g. @ayush_creator)"
+                        type="text"
+                        required
+                      />
+                    </>
+                  )}
                   <input
                     className="text-input"
                     value={loginEmail}

@@ -43,7 +43,7 @@ export function BrandHalo() {
   return <><CursorGrid/><canvas ref={ref} className="brand-halo" aria-hidden="true" /></>
 }
 
-function CursorGrid() {
+export function CursorGrid() {
   const ref=useRef<HTMLCanvasElement>(null)
   useEffect(()=>{
     const canvas=ref.current

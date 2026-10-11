@@ -14,6 +14,45 @@ from ..services.tiger_db import tiger_db
 
 router = APIRouter(prefix="/analysis", tags=["Content Analysis"])
 
+import struct
+
+def _extract_mp4_duration(filepath: str) -> Optional[float]:
+    """Pure-Python MP4 duration reader without external dependencies."""
+    try:
+        with open(filepath, "rb") as f:
+            while True:
+                header = f.read(8)
+                if len(header) < 8: break
+                size, name = struct.unpack(">I4s", header)
+                if size == 1:
+                    size = struct.unpack(">Q", f.read(8))[0] - 8
+                if name == b"moov":
+                    while True:
+                        sub_header = f.read(8)
+                        if len(sub_header) < 8: break
+                        sub_size, sub_name = struct.unpack(">I4s", sub_header)
+                        if sub_name == b"mvhd":
+                            ver = f.read(1)[0]
+                            f.read(3) # flags
+                            if ver == 1:
+                                f.read(16) # creation & mod
+                                timescale, duration = struct.unpack(">IQ", f.read(12))
+                            else:
+                                f.read(8) # creation & mod
+                                timescale, duration = struct.unpack(">II", f.read(8))
+                            if timescale > 0:
+                                return round(duration / timescale, 1)
+                            return None
+                        else:
+                            f.seek(max(0, sub_size - 8), os.SEEK_CUR)
+                elif size > 8:
+                    f.seek(size - 8, os.SEEK_CUR)
+                else:
+                    break
+    except Exception:
+        pass
+    return None
+
 @router.post("/run", response_model=FullAnalysisResponse)
 async def run_analysis(
     file: Optional[UploadFile] = File(None),
@@ -24,7 +63,8 @@ async def run_analysis(
     reach_goal: str = Form("50000"),
     baseline_views: int = Form(15000),
     simulation_intensity: str = Form("balanced"),
-    agent_count: int = Form(30)
+    agent_count: int = Form(30),
+    video_duration: Optional[float] = Form(None)
 ):
     """
     Executes the Complete 4-Stage Virality Intelligence Pipeline:
@@ -35,6 +75,7 @@ async def run_analysis(
     """
     analysis_id = f"an_{uuid.uuid4().hex[:10]}"
     saved_video_path = None
+    detected_duration = video_duration
 
     # Handle video file save if provided
     if file:
@@ -42,6 +83,13 @@ async def run_analysis(
         saved_video_path = os.path.join(settings.UPLOAD_DIR, f"{analysis_id}{file_ext}")
         with open(saved_video_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+        
+        # Detect actual file duration if not sent by client
+        if not detected_duration and file_ext.lower() in [".mp4", ".mov", ".m4v"]:
+            detected_duration = _extract_mp4_duration(saved_video_path)
+
+    # Default to 15.0 if cannot detect duration
+    final_duration = detected_duration if (detected_duration and detected_duration > 1.0) else 15.0
 
     # 1. Gemini Multimodal Perception
     dna = await gemini_service.analyze_content(
@@ -53,13 +101,14 @@ async def run_analysis(
         reach_goal=reach_goal
     )
 
-    # 2. MiroFish Swarm Simulation
+    # 2. MiroFish Swarm Simulation with true video duration
     pop_count = 50 if simulation_intensity == "deep" else (20 if simulation_intensity == "fast" else agent_count)
     decisions, retention_curve, network_map, debates, summary = mirofish_engine.simulate(
         dna=dna,
         story_context=description,
         platform=platform,
-        population_size=pop_count
+        population_size=pop_count,
+        video_duration=final_duration
     )
 
     # 3. Calibrated Reach Prediction
@@ -71,12 +120,13 @@ async def run_analysis(
     )
 
     # 4. Gemini Strategic Prescription & Variant B
-    prescription = gemini_remedy_service.synthesize(
+    prescription = await gemini_remedy_service.synthesize(
         dna=dna,
         summary=summary,
         prediction=prediction,
         story_context=description,
-        platform=platform
+        platform=platform,
+        video_duration=final_duration
     )
 
     response_data = FullAnalysisResponse(

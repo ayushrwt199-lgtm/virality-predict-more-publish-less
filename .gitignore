@@ -38,3 +38,6 @@ backend/mirofish_repo/
 Thumbs.db
 .vscode/
 .idea/
+
+# Local nested frontend clone
+frontend/

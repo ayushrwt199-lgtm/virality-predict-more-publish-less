@@ -16,7 +16,8 @@ export const NODE_TYPES: Record<string, { color: string; model: string; category
   "Casual Scroller": { color: "#eab308", model: "MiroFish OASIS Agent", category: "Synthetic Audience Persona" },
   "Niche Enthusiast": { color: "#06b6d4", model: "MiroFish OASIS Agent", category: "Synthetic Audience Persona" },
   "Platform Feed": { color: "#f43f5e", model: "Recommendation Graph", category: "Distribution Channel" },
-  "Community Hub": { color: "#14b8a6", model: "Secondary Follower Cluster", category: "Audience Network" }
+  "Community Hub": { color: "#14b8a6", model: "Secondary Follower Cluster", category: "Audience Network" },
+  "Industry Expert": { color: "#3b82f6", model: "MiroFish OASIS Agent", category: "Synthetic Audience Persona" }
 }
 
 export interface GraphNode extends d3.SimulationNodeDatum {
@@ -430,8 +431,69 @@ export function AudienceMap({ customNodes, customEdges }: AudienceMapProps) {
 }
 
 // --- Data Generator: Combines Pipeline Models + MiroFish Swarm Personas ---
+function mapNodeType(node: any): string {
+  if (node.id === "0" || node.kind === "core") return "Your Video"
+  if (node.id === "model_gemini_flash" || node.label?.includes("Gemini 2.5 Flash")) return "Gemini 2.5 Flash"
+  if (node.id === "model_mirofish_swarm" || node.label?.includes("MiroFish")) return "MiroFish Swarm"
+  if (node.id === "model_conformal" || node.label?.includes("Conformal")) return "Conformal Regressor"
+  if (node.id === "model_gemini_pro" || node.label?.includes("Gemini 2.5 Pro")) return "Gemini 2.5 Pro"
+  if (node.id === "model_tiger_data" || node.label?.includes("Tiger Data")) return "Tiger Data"
+  if (node.kind === "platform" || node.id === "hub_platform") return "Platform Feed"
+  if (node.kind === "topic" || node.id === "hub_community") return "Community Hub"
+
+  if (node.archetype === "skeptic_critic") return "Skeptic Critic"
+  if (node.archetype === "viral_amplifier") return "Viral Amplifier"
+  if (node.archetype === "casual_scroller") return "Casual Scroller"
+  if (node.archetype === "niche_enthusiast") return "Niche Enthusiast"
+  if (node.archetype === "industry_expert") return "Industry Expert"
+
+  if (node.kind === "creator") return "Viral Amplifier"
+  if (node.kind === "audience") return "Casual Scroller"
+  return "Niche Enthusiast"
+}
+
 function generateGraphData(customNodes?: Array<any>, customEdges?: Array<any>): { nodes: GraphNode[]; links: GraphLink[] } {
-  // 1. The Core AI Model and Infrastructure Nodes
+  // If customNodes from MiroFish Swarm are available, map ALL of them dynamically!
+  if (customNodes && customNodes.length > 0) {
+    const nodes: GraphNode[] = customNodes.map((cn: any) => {
+      const type = mapNodeType(cn)
+      const isModel = cn.kind === "model"
+      const isCore = cn.kind === "core" || cn.id === "0"
+      const isHub = cn.kind === "platform" || cn.kind === "topic"
+
+      return {
+        id: String(cn.id),
+        name: cn.label || cn.name || `Agent ${cn.id}`,
+        type: type,
+        model: isModel ? cn.label : isCore ? "Candidate Video Post" : isHub ? "Distribution Hub" : "MiroFish OASIS Swarm Persona",
+        role: cn.action ? `Action: ${cn.action.toUpperCase()} (${cn.dwell_time_sec || 0}s dwell)` : (cn.kind || "Network Node"),
+        uuid: `node-${cn.id}`,
+        properties: {
+          action: cn.action || "evaluated",
+          dwell_time: cn.dwell_time_sec ? `${cn.dwell_time_sec}s` : "12.0s",
+          sentiment: cn.sentiment || "neutral",
+          round: cn.propagation_round !== undefined ? `Round ${cn.propagation_round}` : "Active",
+          archetype: cn.archetype || cn.kind || "participant"
+        },
+        summary: cn.comment_text || (cn.action === "share" ? "Initiated secondary diffusion cascade to followers." : cn.action === "bounce" ? "Dropped off in first 3 seconds due to pacing lag." : cn.action === "like" ? "Liked and saved post for peer sharing." : "Engaged with content in explore feed."),
+        size: cn.size || (isCore ? 24 : isModel ? 16 : isHub ? 15 : (cn.action === "share" ? 13 : 9)),
+        x: cn.x,
+        y: cn.y
+      }
+    })
+
+    const links: GraphLink[] = (customEdges && customEdges.length > 0)
+      ? customEdges.map((ce: any) => ({
+          source: String(ce.source),
+          target: String(ce.target),
+          rel: ce.rel || "DIFFUSES_TO"
+        }))
+      : []
+
+    return { nodes, links }
+  }
+
+  // Fallback demo graph
   const modelNodes: GraphNode[] = [
     {
       id: "model_gemini_flash",
@@ -527,41 +589,40 @@ function generateGraphData(customNodes?: Array<any>, customEdges?: Array<any>): 
     }
   ]
 
-  // 2. Synthetic Audience Agents & Community Hubs
   const audienceNodes: GraphNode[] = [
     {
-      id: "agent_marcus",
-      name: "Marcus S. (Skeptic)",
+      id: "agent_skeptic_01",
+      name: "Skeptic Critic #001",
       type: "Skeptic Critic",
       model: "MiroFish OASIS Agent",
       role: "Critical Evaluator",
       uuid: "agent-ocean-skeptic-01",
       properties: { skepticism: "0.88", patience: "1.8s", action: "Commented with critique" },
-      summary: "Demanded empirical verification around mid-video; questioned corporate tone."
+      summary: "Demanded empirical verification around mid-video; questioned authenticity of claims."
     },
     {
-      id: "agent_elena",
-      name: "Elena R. (Amplifier)",
+      id: "agent_amplifier_01",
+      name: "Viral Amplifier #004",
       type: "Viral Amplifier",
       model: "MiroFish OASIS Agent",
       role: "Super-Spreader",
       uuid: "agent-ocean-amplifier-02",
       properties: { extraversion: "0.92", shares: "Re-posted to 12 followers", action: "Share Cascade" },
-      summary: "Loved the visual clarity and initiated a Tier 2 secondary network diffusion."
+      summary: "Initiated a Tier 2 secondary network diffusion based on visual clarity."
     },
     {
-      id: "agent_kenji",
-      name: "Kenji T. (Scroller)",
+      id: "agent_scroller_01",
+      name: "Casual Scroller #003",
       type: "Casual Scroller",
       model: "MiroFish OASIS Agent",
       role: "Fast Consumer",
       uuid: "agent-ocean-scroller-03",
       properties: { attention_span: "1.2s", action: "Watched 2.4s then skipped" },
-      summary: "Skipped at 00:02.4 when talking head hesitated before the punchline."
+      summary: "Skipped at 00:02.4 when pacing hesitated before the punchline."
     },
     {
-      id: "agent_priya",
-      name: "Priya K. (Enthusiast)",
+      id: "agent_enthusiast_01",
+      name: "Niche Enthusiast #002",
       type: "Niche Enthusiast",
       model: "MiroFish OASIS Agent",
       role: "Community Insider",
@@ -571,7 +632,7 @@ function generateGraphData(customNodes?: Array<any>, customEdges?: Array<any>): 
     },
     {
       id: "hub_platform",
-      name: "Instagram Explore Feed",
+      name: "Platform Explore Feed",
       type: "Platform Feed",
       model: "Algorithmic Distribution Engine",
       role: "Recommendation Filter",
@@ -581,39 +642,34 @@ function generateGraphData(customNodes?: Array<any>, customEdges?: Array<any>): 
     },
     {
       id: "hub_community",
-      name: "AI & Tech Community",
+      name: "Niche Community Hub",
       type: "Community Hub",
       model: "Secondary Follower Cluster",
       role: "Viral Cascade Target",
       uuid: "hub-niche-cluster-42",
       properties: { size: "4,500 active peers" },
-      summary: "High-density peer cluster receptive to the core technical message."
+      summary: "High-density peer cluster receptive to the core message."
     }
   ]
 
   const nodes = [...modelNodes, ...audienceNodes]
 
-  // Curved Relationships with Meaningful Edge Labels
   const links: GraphLink[] = [
-    // Pipeline flow connections
     { source: "0", target: "model_gemini_flash", rel: "PERCEIVES_HOOK" },
     { source: "model_gemini_flash", target: "model_mirofish_swarm", rel: "SEEDS_SWARM" },
     { source: "model_mirofish_swarm", target: "model_conformal", rel: "TRANSMITS_METRICS" },
     { source: "model_mirofish_swarm", target: "model_tiger_data", rel: "LOGS_TELEMETRY" },
     { source: "model_conformal", target: "model_gemini_pro", rel: "CALIBRATES_BOUNDS" },
     { source: "model_gemini_pro", target: "0", rel: "PRESCRIBES_VARIANT_B" },
-
-    // Agent simulation interactions
-    { source: "model_mirofish_swarm", target: "agent_marcus", rel: "SPAWNS_PERSONA" },
-    { source: "model_mirofish_swarm", target: "agent_elena", rel: "SPAWNS_PERSONA" },
-    { source: "model_mirofish_swarm", target: "agent_kenji", rel: "SPAWNS_PERSONA" },
-    { source: "model_mirofish_swarm", target: "agent_priya", rel: "SPAWNS_PERSONA" },
-
-    { source: "0", target: "agent_kenji", rel: "DROPS_OFF_00:02" },
-    { source: "0", target: "agent_elena", rel: "CREATES_CASCADE" },
-    { source: "agent_elena", target: "hub_community", rel: "DIFFUSES_POST" },
-    { source: "agent_marcus", target: "agent_priya", rel: "DEBATES_IN_THREAD" },
-    { source: "agent_elena", target: "hub_platform", rel: "TRIGGERS_EXPLORE" },
+    { source: "model_mirofish_swarm", target: "agent_skeptic_01", rel: "SPAWNS_PERSONA" },
+    { source: "model_mirofish_swarm", target: "agent_amplifier_01", rel: "SPAWNS_PERSONA" },
+    { source: "model_mirofish_swarm", target: "agent_scroller_01", rel: "SPAWNS_PERSONA" },
+    { source: "model_mirofish_swarm", target: "agent_enthusiast_01", rel: "SPAWNS_PERSONA" },
+    { source: "0", target: "agent_scroller_01", rel: "DROPS_OFF_00:02" },
+    { source: "0", target: "agent_amplifier_01", rel: "CREATES_CASCADE" },
+    { source: "agent_amplifier_01", target: "hub_community", rel: "DIFFUSES_POST" },
+    { source: "agent_skeptic_01", target: "agent_enthusiast_01", rel: "DEBATES_IN_THREAD" },
+    { source: "agent_amplifier_01", target: "hub_platform", rel: "TRIGGERS_EXPLORE" },
     { source: "hub_platform", target: "model_conformal", rel: "CALIBRATES_REACH" }
   ]
 

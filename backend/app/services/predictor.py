@@ -37,8 +37,8 @@ class CalibratedReachPredictor:
             except Exception:
                 pass
 
-        # Grounding factor based on creator baseline
-        anchor_views = max(2000, min(goal_val, baseline_views * 2))
+        # Grounding factor based on creator baseline & target reach goal
+        anchor_views = max(baseline_views, goal_val)
 
         # Multiplier derived from Gemini Content DNA & MiroFish Cascade Dynamics
         # Formula: M = 1 + alpha*(Hook) + beta*(ShareCascadeRate) + gamma*(Velocity) - delta*(BounceRate)
